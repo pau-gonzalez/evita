@@ -184,7 +184,6 @@ is_tautology:
 ; RDI puntero a mgr
 ; RSI puntero a raiz
 
-;Armo stackframe
 .stackframe
 	push rbp
 	mov rbp, rsp
@@ -235,16 +234,89 @@ is_tautology:
 	pop rbp
 	ret
 
-
-
 global is_sat
 
+;mgr offset:
+%define offset_ID 0
+%define offset_greatest_node_ID 4
+%define offset_greatest_var_ID 8
+%define offset_true_obdd 12
+%define offset_false_obdd 20
+%define offset_vars_dict 28
 
+;root offset:
+%define offset_var_ID 0
+%define offset_node_ID 4
+%define offset_ref_count 8
+%define offset_high_obdd 12
+%define offset_low_obdd 20
 
+;obdd offset:
+%define offset_mgr 0 
+%define offset_root 8
+%define size_obdd 16
+
+;bool is_sat(obdd_mgr* mgr, obdd_node* root){
+;	if(is_constant(mgr, root)){
+;		return is_true(mgr, root);
+;	}else{
+;		return is_sat(mgr, root->high_obdd) || is_sat(mgr, root->high_obdd);	
+;	}
+;}
+
+;rdi contiene puntero a mgr
+;rsi contiene puntero a root
 is_sat:
+.stackframe
+	push rbp
+	mov rbp, rsp
+	push rbx
+	push r8
+	push r9
+	push r12
+	sub rsp, 8
+	
+.begin
+	xor r12, r12
+	mov rbx, rdi
+	mov r8, rsi
+	; if(is_constant(mgr, root)){
+	call is_constant
+	cmp byte rax, 0
+	je .evaluateHigh
+	; return is_true(mgr, root);
 
+.isTrue
+	mov rdi, rbx
+	mov rsi, r8
+	call is_true
+	jmp .end
+	; }else{
 
+.evaluateHigh
+	; is_tautology(mgr, root->high_obdd)
+	mov rsi, [r8 + offset_high_obdd]
+	mov rdi, rbx
+	call is_tautology
+	cmp rax, 1
+	; &&
+	jne .end
+
+.evaluateLow
+	; is_tautology(mgr, root->low_obdd);
+	mov rsi, [r8 + offset_low_obdd]
+	mov rdi, rbx
+	call is_tautology
+
+.end
+	add rsp, 8
+	pop r12
+	pop r9
+	pop r8
+	pop rbx
+	pop rbp
 	ret
+
 
 
 ; AUXILIARES
