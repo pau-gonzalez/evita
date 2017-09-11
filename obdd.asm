@@ -148,6 +148,7 @@ is_tautology:
 	push r8
 	push r9
 	push r12
+	sub rsp, 8
 	
 
 .begin
@@ -180,6 +181,7 @@ is_tautology:
 	call is_tautology
 
 .end
+	add rsp, 8
 	pop r12
 	pop r9
 	pop r8
