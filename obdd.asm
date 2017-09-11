@@ -190,8 +190,13 @@ is_tautology:
 	ret
 
 global is_sat
+
+
+
 is_sat:
-ret
+
+
+	ret
 
 
 ; AUXILIARES
