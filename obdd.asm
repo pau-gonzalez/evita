@@ -1,7 +1,7 @@
 extern free
 extern malloc
+extern is_constant
 extern dictionary_add_entry
-
 
 ;/** implementar en ASM
 ;obdd_node* obdd_mgr_mk_node(obdd_mgr* mgr, char* var, obdd_node* high, obdd_node* low){
@@ -114,8 +114,54 @@ ret
 ; **/
 
 global obdd_create
+
+;mgr offset:
+%define offset_ID 0
+%define offset_greatest_node_ID 4
+%define offset_greatest_var_ID 8
+%define offset_true_obdd 12
+%define offset_false_obdd 20
+%define offset_vars_dict 28
+
+;root offset:
+%define offset_var_ID 0
+%define offset_node_ID 4
+%define offset_ref_count 8
+%define offset_high_obdd 12
+%define offset_low_obdd 20
+
+;obdd offset:
+%define offset_mgr 0 
+%define offset_root 8
+%define size_obdd 16
+
+;rdi contiene puntero a mgr
+;rsi contiene puntero a root
+
+;obdd* obdd_create(obdd_mgr* mgr, obdd_node* root){
+;	obdd* new_obdd		= malloc(sizeof(obdd));
+;	new_obdd->mgr		= mgr;
+;	new_obdd->root_obdd	= root;
+;	return new_obdd;
+;}
+
 obdd_create:
-ret
+	push rbp
+	mov rbp, rsp
+	push r8
+	push r9
+
+	mov r8, [rdi]
+	mov r9, [rsi]
+	mov rdi, size_obdd
+	call malloc   					;rax contiene puntero a new_obdd
+	mov [rax + offset_mgr], r8		;new_obdd->mgr = mgr
+	mov [rax + offset_root], r9		;new_obdd->root_obdd = root
+
+	pop r9
+	pop r8
+	pop rbp
+	ret
 
 global obdd_destroy
 obdd_destroy:
@@ -125,7 +171,6 @@ global obdd_node_apply
 obdd_node_apply:
 ret
 
-; /** implementar en ASM
 ; bool is_tautology(obdd_mgr* mgr, obdd_node* root){
 	; if(is_constant(mgr, root)){
 		; return is_true(mgr, root);
@@ -133,7 +178,6 @@ ret
 		; return is_tautology(mgr, root->high_obdd) && is_tautology(mgr, root->low_obdd);	
 	; }
 ; }
-; **/
 
 global is_tautology
 is_tautology:
@@ -150,7 +194,6 @@ is_tautology:
 	push r12
 	sub rsp, 8
 	
-
 .begin
 	xor r12, r12
 	mov rbx, rdi
@@ -160,12 +203,14 @@ is_tautology:
 	cmp byte rax, 0
 	je .evaluateHigh
 	; return is_true(mgr, root);
+
 .isTrue
 	mov rdi, rbx
 	mov rsi, r8
 	call is_true
 	jmp .end
 	; }else{
+
 .evaluateHigh
 	; is_tautology(mgr, root->high_obdd)
 	mov rsi, [r8 + offset_high_obdd]
@@ -174,6 +219,7 @@ is_tautology:
 	cmp rax, 1
 	; &&
 	jne .end
+
 .evaluateLow
 	; is_tautology(mgr, root->low_obdd);
 	mov rsi, [r8 + offset_low_obdd]
@@ -188,6 +234,8 @@ is_tautology:
 	pop rbx
 	pop rbp
 	ret
+
+
 
 global is_sat
 

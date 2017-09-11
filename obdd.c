@@ -35,20 +35,19 @@ bool dictionary_has_key(struct dictionary_t* dict, char* key){
 
 
 uint32_t dictionary_add_entry(struct dictionary_t* dict, char* key){
+	if (dict->size == dict->max_size - 1)
+		dict->max_size = dict->max_size * 2;
 	dict->size++;
-	if (dict->size == dict->max_size){
-		dict->max_size = dict->max_size*2;
-		entries newEntries[max_size];
-		for (int i= 0; i<max_size/2; i++){
-			newEntries[i] = dict->entries[i];
-		}
-		dict->entries = newEntries;
-	}
-	dict->entries[size-1]->key = key;
-	dict->entries[size-1]->value = dict->size;
-
-	return size;
-
+	int NumberOfKeys = dict->entries.size();
+	char* newEntries[NumberOfKeys + 1];
+	for (int i = 0; i < NumberOfKeys - 1; i++)
+		newEntries[i] = dict->entries[i];
+	struct dictionary_entry_t newKey;
+	newKey->key = key;
+	newKey->value = get_new_mgr_ID();
+	newEntries[NumberOfKeys] = newKey;
+	dict->entries = newEntries;
+	return newKey->value;
 }
 
 
