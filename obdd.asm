@@ -2,6 +2,30 @@ extern free
 extern malloc
 extern dictionary_add_entry
 
+%define NULL 0
+
+;OFFSETS nodo:
+%define offset_var_ID 0
+%define offset_node_ID 4
+%define offset_ref_count 8
+%define offset_high_obdd 12
+%define offset_low_obdd 16
+
+%define size_nodo 28
+
+;OFFSETS mgr
+%define offset_ID 0
+%define offset_greatest_node_ID 4
+%define offset_greatest_var_ID 8
+%define offset_true_obbd 12
+%define offset_false_obbd 20
+%define offset_vars_dict 28
+
+;OFFSETS obdd_t
+%define offset_mgr 0
+%define offset_root_obdd 8
+
+%define obdd_t_size 16
 
 ;/** implementar en ASM
 ;obdd_node* obdd_mgr_mk_node(obdd_mgr* mgr, char* var, obdd_node* high, obdd_node* low){
@@ -20,31 +44,14 @@ extern dictionary_add_entry
 ;}
 ;**/
 
-%define NULL 0
 
-;OFFSETS nodo:
-%define offset_var_ID 0
-%define offset_node_ID 4
-%define offset_ref_count 8
-%define offset_high_obdd 12
-%define offset_low_obdd 16
-
-%define size_nodo 28
 
 global obdd_mgr_mk_node
-
-%define offset_ID 0
-%define offset_greatest_node_ID 4
-%define offset_greatest_var_ID 8
-%define offset_true_obbd 12
-%define offset_false_obbd 20
-%define offset_vars_dict 28
-
-obdd_mgr_mk_node:
 ; RDI contiene puntero a mgr
 ; RSI contiene puntero a var
 ; RDX contiene high
 ; RCX contiene low
+obdd_mgr_mk_node:
 
 	push rbp
 	mov rbp, rsp
@@ -65,7 +72,7 @@ obdd_mgr_mk_node:
 	mov rdi, [rdi + offset_vars_dict]
 	call dictionary_add_entry
 
-	mov r13, rax
+	mov r13d, eax
 	;R13 contiene uint32_t var_ID
 	mov rdi, nodo_tam
 	call malloc
@@ -74,7 +81,7 @@ obdd_mgr_mk_node:
 	mov [r14 + offset_var_ID], r13
 	mov rdi, rbx
 	call obdd_mgr_get_next_node_ID
-	mov rdi, [rax]
+	mov rdi, rax
 	mov [r14 + offset_node_ID], rdi
 	mov [r14 + offset_high_obdd], r9
 	cmp r9, NULL
@@ -181,8 +188,36 @@ obdd_create:
 ; TODO
 ret
 
+; void obdd_destroy(obdd* root){
+	; if(root->root_obdd != NULL){
+		; obdd_node_destroy(root->root_obdd);
+		; root->root_obdd		= NULL;
+	; }
+	; root->mgr			= NULL;
+	; free(root);
+; }
+
 global obdd_destroy
+; RDI puntero a root
 obdd_destroy:
+	push rbp
+	mov rbp, rsp
+	push rbx
+	sub rsp, 8
+	cmp [rdi + offset_root_obdd], NULL
+	je .free
+	mov rbx, rdi
+	mov rdi, [rdi + offset_root_obdd]
+	call obdd_destroy
+	mov byte [rbx + offset_root_obdd], NULL
+.free
+	mov byte [rbx + offset_mgr], NULL
+	mov rdi, rbx
+	call free
+.end	
+	add rsp, 8
+	pop rbx
+	pop rbp
 ; TODO
 ret
 
